@@ -1,0 +1,140 @@
+---
+author: Patrick Origer
+date: 9/8/20
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+choco <- read.csv("https://raw.githubusercontent.com/xdaiISU/ds202materials/master/hwlabs/data/choco.csv") 
+str(choco)
+```
+```{r}
+hist(choco$Rating)
+boxplot(choco$Rating)
+```
+1. I would consider the ratings skew left. There a small number of outliers only near the bottom of the ratings.
+```{r}
+barplot(table(choco$Date))
+```
+2. The number of ratings are greatest around 2015, but there are considerably less ratings during the first few years that ratings were given and some of the more recent years have lower review numbers than previous years
+```{r}
+summary(choco$Cocoa_Percent)
+plot(choco$Cocoa_Percent, choco$Rating)
+```
+```{r}
+Ratings <- choco$Rating
+CocoaPercentage <- choco$Cocoa_Percent
+cor(Ratings, CocoaPercentage)
+```
+3. I chose to create a scatter plot and find the correlation between Ratings and Cocoa Percentage. I argue that ratings do not depend on cocoa percentage, because there do not seem to be a consistent correlation between the two from looking at the correlation coefficient and scatter plot.
+
+```{r}
+summary(choco)
+```
+```{r}
+#Sweet Characteristic
+sweetChar <- subset(choco, select = c(Rating, Characteristics1, Characteristics2, Characteristics3, Characteristics4), subset =  Characteristics1=='sweet' | Characteristics2=='sweet' | Characteristics3=='sweet' | Characteristics4=='sweet')
+summary(sweetChar$Rating)
+```
+```{r}
+#Savory Characteristic
+savoryChar <- subset(choco, select = c(Rating, Characteristics1, Characteristics2, Characteristics3, Characteristics4), subset =  Characteristics1=='savory' | Characteristics2=='savory' | Characteristics3=='savory' | Characteristics4=='savory')
+summary(savoryChar$Rating)
+savoryChar
+```
+```{r}
+#Creamy Characteristic
+creamyChar <- subset(choco, select = c(Rating, Characteristics1, Characteristics2, Characteristics3, Characteristics4), subset =  Characteristics1=='creamy' | Characteristics2=='creamy' | Characteristics3=='creamy' | Characteristics4=='creamy')
+summary(creamyChar$Rating)
+creamyChar
+```
+```{r}
+#Bold Characteristic
+boldChar <- subset(choco, select = c(Rating, Characteristics1, Characteristics2, Characteristics3, Characteristics4), subset =  Characteristics1=='bold' | Characteristics2=='bold' | Characteristics3=='bold' | Characteristics4=='bold')
+summary(boldChar$Rating)
+boldChar
+```
+```{r}
+#All Results
+summary(choco$Rating)
+```
+```{r}
+#Barplot Comparing Ratings by Characteristics
+charBarplotMeans <- c(mean(choco$Rating), mean(boldChar$Rating), mean(creamyChar$Rating), mean(savoryChar$Rating), mean(sweetChar$Rating))
+
+barplot(charBarplotMeans,
+main="Mean Rating Values Based on Chocolate Characteristics",
+xlab="Characteristic",
+ylab="Mean Rating",
+names.arg = c("All Characteristics", "Bold", "Creamy", "Savory", "Sweet")
+)
+```
+4. From comparing a few select characteristics, I found that chocolate described as being Sweet is more often rated worse than the average chocolate given a rating. In contrast, Creamy chocolate receives ratings higher than the average chocolate usually. Creamy chocolates received a mean of 3.48 on ratings and sweet received a mean rating of 3.046.
+
+5a. For the first analysis, I would like to compare the rating results between the U.S.A. and France. For the second, I would like find out how ratings received by chocolates has changed throughout the years. For example, if chocolates review past 2016 receive lower rating more often than chocolates reviewed before 2010.
+```{r}
+#Barplot Mean Rating Comparison of USA and France
+usaRatingVar <- subset(choco, select = c(Rating, Location), subset = Location=='U.S.A.')
+franceRatingVar <- subset(choco, select = c(Rating, Location), subset = Location=='France')
+twoNationRatingMeans <- c(mean(usaRatingVar$Rating),mean(franceRatingVar$Rating))
+barplot(twoNationRatingMeans,
+main="Mean Ratings for USA and France",
+xlab="Country",
+ylab="Rating",
+names.arg=c("USA","France"),
+ylim=c(0,4.5)
+)
+
+```
+```{r}
+#USA Rating Summary Statistics
+summary(usaRatingVar)
+sd(usaRatingVar$Rating)
+```
+```{r}
+#France Rating Summary Statistics
+summary(franceRatingVar)
+sd(franceRatingVar$Rating)
+```
+
+```{r}
+#Barplot of Year Chunks versus Rating
+earliestThreeYears <- subset(choco, select=c(Rating,Date), subset= Date==2006 | Date==2007 | Date==2008)
+middleThreeYears <- subset(choco, select=c(Rating,Date), subset= Date==2012 | Date==2013 | Date==2014)
+latestThreeYears <- subset(choco, select=c(Rating,Date), subset= Date==2018 | Date==2019 | Date==2020)
+threeTimeRatingMeans <- c(mean(earliestThreeYears$Rating), mean(middleThreeYears$Rating), mean(latestThreeYears$Rating))
+
+barplot(threeTimeRatingMeans,
+main="Mean Ratings of Separate Blocks of Time",
+xlab="Years",
+ylab="Rating",
+names.arg=c("2006-2008","2012-2014","2018-2020")
+  
+)
+```
+```{r}
+#Earliest Ratings Summaries
+summary(earliestThreeYears$Rating)
+sd(earliestThreeYears$Rating)
+```
+```{r}
+#Middle Ratings Summaries
+summary(middleThreeYears$Rating)
+sd(middleThreeYears$Rating)
+```
+```{r}
+#Latest Ratings Summaries
+summary(latestThreeYears$Rating)
+sd(latestThreeYears$Rating)
+```
+
+
+
+5b. (USA and France Comparison of Ratings) There seems to be some small differences in ratings between the two countries, USA and France. The USA has a mean of 3.171 versus France's mean of 3.25. This does lead me to believe that a chocolate from France will more likely be of a higher rating and possibly even quality when compared to a USA chocolate. I should note that the standard deviation for the USA is small than France's. From the standard deviations, I believe that USA chocolates may receive lower scores on average when compared to France chocolates. However, USA chocolates vary less in Ratings and so receive more consistent ratings than France chocolates.
+
+5c. (Comparison of Ratings between oldest and newest reviews) I found that the mean ratings during 2012-2014 and 2018-2020 are close, whereas the mean rating for 2006-2008 was considerably lower. 2006-2008 mean rating being 3.034 compared to 2018-2020 being 3.165. It is notable that the standard deviation of ratings decrease as time passed. The 2006-2008 standard deviation is 0.63 and the 2018-2020 standard deviation is 0.38. It seemed that as the reviews have been complete, they have progressively come to more similar conclusions on ratings.
+
