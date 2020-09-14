@@ -168,40 +168,46 @@ ggplot(d, aes(x=Characteristic, y=mean)) + geom_bar(stat="identity") + theme(axi
 
 **5. Brainstorm two analyses you would like to perform with your teammate. Describe in plain language what comparisons are you making. Create suitable numerical and graphical summaries for your analyses. Describe the results.**  
 
-For my two analyses, I will look at how the origin of the cocoa bean affects the result of the rating, and I will look at which company has the highest average ratings.
+For the two analyses, I will compare rating patterns between the USA and France, and I will determine ratings trends throughout the years.
 
+  
+For the first analysis, I will look at the distribution of results for the U.S.A. v. France.
 ```{r}
-beanRatings <- choco[, c("Bean_Origin", "Rating")]
-aggregatedTable <- aggregate(x=beanRatings$Rating,by=list(beanRatings$Bean_Origin), FUN=mean)
-beanCounts <- data.frame(table(choco[, c("Bean_Origin")]))
-aggregatedTable$Freq <- beanCounts$Freq
-x <- c("Bean_Origin", "Avg_Rating", "Freq")
+usaFrance <- choco[choco$Location == "U.S.A." | choco$Location == "France", c("Location", "Rating")]
+summary(usaFrance)
+```
+  
+THe above summary shows that the U.S.A. has over 5.5 times the amount of entries as France. This means that when looking at the data, this will need to be taken into account before making the final analysis. The joint distribution between the two countries in terms of ratings is also shown.
+```{r}
+usaFranceDf <- data.frame(table(usaFrance$Location, usaFrance$Rating))
+usaFranceDf <- usaFranceDf[usaFranceDf$Var1 == "U.S.A." | usaFranceDf$Var1 == "France",]
+x <- c("Location", "Rating", "Freq")
+colnames(usaFranceDf) <- x
+ggplot(usaFranceDf, aes(fill=Rating, x=Location, y=Freq)) + geom_bar(stat="identity", position="dodge")
+```
+  
+The above plot shows the breakdown of results for the two countries. It can be clearly seen that France ratings skew left. This means that France tends to have higher ratings than it does lower ratings. Looking at the U.S.A. side, it can be seen that the distribution is slightly more symmetrical and uniform. Therefore, the U.S.A tends to be slightly more in the middle in terms of overall rating. However, the graphs are both very similar and therefore should result in similar average ratings. This can be verified in the below summaries:
+```{r}
+usa <- choco[choco$Location == "U.S.A.", c("Location", "Rating")]
+france <- choco[choco$Location == "France", c("Location", "Rating")]
+summary(usa)
+summary(france)
+```
+  
+The above summaries prove that the averages are similar. In fact, France only has a 0.079 higher average rating than the U.S.A. Of course, the fact that France has far fewer entries should be considered as well.
+  
+For the second analysis, I will now look at how the rating trends have changed over time.
+```{r}
+years <- choco[, c("Date", "Rating")]
+aggregatedTable <- aggregate(x=years$Rating,by=list(years$Date), FUN=mean)
+x <- c("Year", "Avg_Rating")
 colnames(aggregatedTable) <- x
-kable(aggregatedTable[with(aggregatedTable, order(-Avg_Rating)),])
+kable(aggregatedTable)
 ```
   
-To determine which countries of origin had the best ratings, the average rating for each bean origin was put into the table above. It can be seen that Tobago has the highest average rating (by far) and Matinique, Principe, Puerto Rico and St. Vincent-Grenadines are all tied for worst average rating. However, Since the top 2 countries only have 2 and 1 entry, respectively, it may be unfair to claim those are the top countries. Looking at the third entry, Solomon Islands, this country has 10 entries. Depending on how one measures the "best", the results can vary slightly.
+The above table shows the breakdown of the average rating over time. This can be better visualized below:
 ```{r}
-ggplot(aggregatedTable, aes(x=Bean_Origin, y=Avg_Rating)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+ggplot(aggregatedTable, aes(x=Year, y=Avg_Rating)) + geom_line(stat="identity") + geom_smooth(method="loess", se=TRUE, fullrange=FALSE, level=0.95)
 ```
   
-The above plot shows graphically all the bean origins and hwo they compare with one another.
-
-```{r}
-companyRatings <- choco[, c("Company", "Rating")]
-aggregatedTable <- aggregate(x=companyRatings$Rating,by=list(companyRatings$Company), FUN=mean)
-companyCounts <- data.frame(table(choco$Company))
-aggregatedTable$Freq <- companyCounts$Freq
-x <- c("Company", "Avg_Rating", "Freq")
-colnames(aggregatedTable) <- x
-kable(aggregatedTable[with(aggregatedTable, order(-Avg_Rating)),])
-```
-  
-Looking at the table above, it can be seen which are the top companies and which are the worst, in terms of ratings. However, similar to the previous analysis, it can be seen that the top 5 countries have limited entries in the dataset, so it may be more fair to claim Idilio is the best company on average, given its amount of enties and still high average rating.
-
-```{r}
-top50 <- head(aggregatedTable[with(aggregatedTable, order(-Avg_Rating)),], 50)
-ggplot(top50, aes(x=Company, y=Avg_Rating)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-```
-  
-Finally, the graph above visually compares the top 50 companies.
+There is a clear rising trend in average rating until 2017 where the average rating begins to take a sharp decline in average rating. A regression line has been added to emphasize this point.
