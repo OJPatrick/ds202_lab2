@@ -1,11 +1,121 @@
 ---
-title: "team"
-author: "Jeffrey Kinard"
+title: "Lab 2 Team 17 Final Analyses"
+author: "Jeffrey Kinard and Patrick Origer"
 date: "9/14/2020"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(knitr)
 ```
 
+For our analyses, we have decided to analyze the following two trends:  
+- Rating patterns between the U.S.A. and France  
+- Rating trends over the years
+
+To start, let's look at the rating patterns between the U.S.A. and France.  
+  
+The distribution of the two countries data points can be seen below:
+```{r}
+choco <- read.csv("https://raw.githubusercontent.com/xdaiISU/ds202materials/master/hwlabs/data/choco.csv") 
+usaFrance <- choco[choco$Location == "U.S.A." | choco$Location == "France", c("Location", "Rating")]
+summary(usaFrance)
+```
+  
+This shows that the U.S.A. has 5.5 times the amount of data points as France. This could lead to inconclusive results and should be considered in the final analysis.
+
+Let us now look at the breakdown of the ratings per country:  
+```{r}
+usaFranceDf <- data.frame(table(usaFrance$Location, usaFrance$Rating))
+usaFranceDf <- usaFranceDf[usaFranceDf$Var1 == "U.S.A." | usaFranceDf$Var1 == "France",]
+x <- c("Location", "Rating", "Freq")
+colnames(usaFranceDf) <- x
+ggplot(usaFranceDf, aes(fill=Rating, x=Location, y=Freq)) + geom_bar(stat="identity", position="dodge")
+```
+  
+This bar plot shows the breakdown of each rating per country. It can be seen that both countries are skewed left, but the U.S.A. is slight more symmetrical than France. This should, in theory, cause the U.S.A. to have a slightly lower average rating.
+
+Let's look at the average ratings numerically to verify:  
+```{r}
+usaRatingVar <- subset(choco, select = c(Rating, Location), subset = Location=='U.S.A.')
+franceRatingVar <- subset(choco, select = c(Rating, Location), subset = Location=='France')
+summary(usaRatingVar)
+sd(usaRatingVar$Rating)
+summary(franceRatingVar)
+sd(franceRatingVar$Rating)
+```
+  
+These two summaries show that France has a 0.079 higher average rating than the U.S.A. However, as discussed above, this could be because France has less entries to count against it than the U.S.A.
+
+Let us now look at this graphically:  
+```{r}
+#Barplot Mean Rating Comparison of USA and France
+twoNationRatingMeans <- c(mean(usaRatingVar$Rating),mean(franceRatingVar$Rating))
+barplot(twoNationRatingMeans,
+main="Mean Ratings for USA and France",
+xlab="Country",
+ylab="Rating",
+names.arg=c("USA","France"),
+ylim=c(0,4.5)
+)
+```
+  
+So, to conclude our findings on the first analysis, we found that there is a very small difference between ratings from France and the U.S.A. with France having a 0.079 higher average rating than the U.S.A. However, the breakdown of the individual ratings are drastically different, but this is mostly due to the U.S.A. having 5 times the amount of points to plot.  
+  
+  
+Let us now look at the second analysis.  
+  
+For this analysis, we are looking at how rating trends have changed over time. We tackled this in two different ways. We looked at how the average rating changed according to blocks of 3 years, and how it's average trend looked continuously over time.  
+  
+Let's first look at how the average rating changed over the three distinct blocks of 3 years:  
+```{r}
+earliestThreeYears <- subset(choco, select=c(Rating,Date), subset= Date==2006 | Date==2007 | Date==2008)
+middleThreeYears <- subset(choco, select=c(Rating,Date), subset= Date==2012 | Date==2013 | Date==2014)
+latestThreeYears <- subset(choco, select=c(Rating,Date), subset= Date==2018 | Date==2019 | Date==2020)
+threeTimeRatingMeans <- c(mean(earliestThreeYears$Rating), mean(middleThreeYears$Rating), mean(latestThreeYears$Rating))
+
+#Earliest Ratings Summaries
+summary(earliestThreeYears$Rating)
+sd(earliestThreeYears$Rating)
+
+#Middle Ratings Summaries
+summary(middleThreeYears$Rating)
+sd(middleThreeYears$Rating)
+
+#Latest Ratings Summaries
+summary(latestThreeYears$Rating)
+sd(latestThreeYears$Rating)
+```
+  
+These results show that the average rating peaks in the middle three years, but not by much. There is only a difference of 0.155 rating between all three blocks of years. However, the standard deviation of these 3 blocks does change drastically. This shows that the distribution of ratings becomes much less varied over time. The worst rating also improves over time. This suggests that even thought the average is fairly consistent, more middle-rated samples are being rated as time goes on than poorly-rated samples.  
+  
+Let's look at this graphically:
+```{r}
+barplot(threeTimeRatingMeans,
+main="Mean Ratings of Separate Blocks of Time",
+xlab="Years",
+ylab="Rating",
+names.arg=c("2006-2008","2012-2014","2018-2020"))
+```
+  
+This pretty much reiterates what was said above. The average is fairly consistent over time, but does have a distinct spike in the middle 3 years.  
+  
+Let's now look at the average rating trend continuously over time, as opposed to blocks of time:  
+```{r}
+years <- choco[, c("Date", "Rating")]
+aggregatedTable <- aggregate(x=years$Rating,by=list(years$Date), FUN=mean)
+x <- c("Year", "Avg_Rating")
+colnames(aggregatedTable) <- x
+kable(aggregatedTable)
+```
+  
+This table shows how the average rating breaks down over time. It is difficult to read in table form, so let's look at it graphically:  
+```{r}
+ggplot(aggregatedTable, aes(x=Year, y=Avg_Rating)) + geom_line(stat="identity") + geom_smooth(method="loess", se=TRUE, fullrange=FALSE, level=0.95)
+```
+  
+This line graph shows the clear spikes in average ratings that appear in 2007, 2011, and 2017. These are all in separate blocks of 3 from the previous bar plot, so that explains why the block averages were so similar. This line graph also has a regression line plotted to show a smoothed average over time. It is clear from this that the average rating was trending upwards until 2017 when it suddenly dropped as it approaches 2021. 
+  
+Overall, it is clear that average ratings go up and down. This is why creating blocks of 3 years helps reduce the noise. This method allowed us to see how the average stayed relatively the same, but the standard deviation varied greatly, which was very interesting to see. Likewise, the line graph shows how a smoothed average reveals the upwards trend occuring until 2017.
