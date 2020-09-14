@@ -1,0 +1,207 @@
+---
+title: "Lab 2"
+author: "Jeffrey Kinard"
+date: "9/13/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(knitr)
+```
+
+## Searching for the Best Chocolates
+**1. How are the ratings distributed? Create both a histogram and a boxplot and describe them. Don’t forget to mention outliers, if there are any.**  
+```{r}
+choco <- read.csv("https://raw.githubusercontent.com/xdaiISU/ds202materials/master/hwlabs/data/choco.csv") 
+
+ggplot(choco, aes(x=Rating)) + geom_histogram(bins=13, color="white")
+```
+  
+As can be seen by the bar plot above, the ratings are very clearly skewed left. The ratings tend to be at or above 2.5 and below 4.0.  
+```{r}
+ggplot(choco, aes(y=Rating)) + geom_boxplot()
+```
+  
+The boxplot above shows the median rating is about 3.25 with the 25 percentile and 75th percentile being at 3.0 and 3.5, respectively. There are some outliers shown in the plot. There are repeated outlier values, but they are all either, 2.0, 1.75, 1.5 or 1.0 rating. This further proves that almost all of the ratings appear to be above 2.5.  
+
+**2. How does the number of ratings depend on the year? Draw a bar chart of the number of reports.**  
+```{r, fig.width=14, fig.height=7}
+d <- choco[, c("Date", "Rating")]
+kable(cor(d))
+```
+  
+The above correlation matrix shows that there is no direct numerical correlation between The year and the number of ratings given. However, this does not mean that there aren't peak years, so let's explore further.  
+```{r}
+d <- table(choco[, c("Date")])
+kable(d)
+```
+  
+The table above shows the number of ratings per year. It is clear from the numbers that the numbers tend to peak around 2014-2016 range, but let's visualize the data to confirm.  
+```{r}
+d <- data.frame(table(choco$Date, choco$Rating))
+x <- c("Year", "Rating", "Freq")
+colnames(d) <- x
+ggplot(d, aes(fill=Rating, x=Year, y=Freq)) + geom_bar(stat="identity")
+```
+  
+The above stacked bar plot shows the peaks that were mentioned above, and it also shows the breakdown of the ratings per year. This allows us to see how, for example, not only was 2015 the year with the most ratings, but it is also the year with the most 3.75 ratings. Meanwhile, 2011 had over 100 fewer ratings, but it had the most 4.0 star ratings.  
+  
+To simplify the data into the specific question - *How does the number of ratings depend on the year?* - let us also plot the data using a simple count of the number of reviews, and disregard the breakdown of ratings per year.  
+```{r}
+d <- data.frame(table(choco[, c("Date")]))
+x <- c("Year", "Freq")
+colnames(d) <- x
+ggplot(d, aes(x=Year, y=Freq)) + geom_bar(stat="identity", color="white")
+```
+  
+It is intersesting to see how the data trends upwards, in terms of number of ratings, but hits a sharp decline for the two years following the peak in 2015. Overall, it appears there was a moderate to high correlation between rating and year between 2006 and 2015, but since 2015, the number of reviews varies greatly.
+
+**3. Do ratings depend on the cacao percentage of a chocolate bar? Create both numerical and graphical summaries, and explain.**  
+```{r}
+d_to_correlate <- choco[, c("Rating", "Cocoa_Percent")]
+cor(d_to_correlate)
+```
+  
+As used in the previous question, a correlation matrix has been used here to determine the correlation between the percentage of cocoa and the rating the chocolate received. There does not appear to be a strong correlation, but there is a slight inverse relationship between the cocoa percentage and the rating as the score is -0.15. However, let us make some plots to make sure this trend is visually apparent.  
+```{r}
+cocoaPercentVector <- choco[, c("Cocoa_Percent")]
+vectorOfFives <- seq(from = 0, to = 100, by = 5)
+cuts <- c(-Inf, vectorOfFives[-1]-diff(vectorOfFives)/2, Inf)
+newPercents <- vectorOfFives[findInterval(cocoaPercentVector, cuts)]
+```
+  
+*For this problem, the percentages have all been rounded to the nearest 5% as that allows us to read the data easier. Otherwise, there could be 100 different possible values.*  
+```{r}
+kable(table(choco$Rating, newPercents))
+```
+  
+The table above shows a fairly visually appealing breakdown of the number of each possible review score based on the cocoa percentage. It can be seen that there is a large number of high reviews (above a 3.0) in the 65% - 80% cocoa range.  
+
+This table very clearly shows a large number of high reviews in this 65% - 80% range, but to make sure this is the case on a plot, let's plot the data.  
+```{r}
+chocoCopy <- choco
+chocoCopy$Cocoa_Percent <- newPercents
+chocoNoOutliers <- chocoCopy[chocoCopy$Cocoa_Percent >= 55,]
+df <- data.frame(table(chocoNoOutliers$Cocoa_Percent, chocoNoOutliers$Rating))
+x <- c("Cocoa_Percent", "Rating", "Freq")
+colnames(df) <- x
+ggplot(df, aes(fill=Rating, x=Cocoa_Percent, y=Freq)) + geom_bar(stat="identity")
+```
+  
+The bar plot above shows the number of reviews per 5% ranges of cocoa and the breakdown of ratings. For example, chocolate between 67% and 72% cocoa have a total of around 1600 reviews - far greater than any other range of cocoa percentages. This also shows that this same range has the most reviews above a 3.0.  
+
+This plot proves that chocolate tends to have more high reviews in the mid range of its possible cocoa percentages. However, this is a pure total number of reviews. This does not account for the average score in each range. A taller bar in this plot just means there were more data points with that percentage, not that the data points were actually better on average.  
+```{r}
+chocoNoOutliers <- chocoCopy[chocoCopy$Cocoa_Percent >= 55, c("Cocoa_Percent", "Rating")]
+aggregatedTable <- aggregate(x=chocoNoOutliers$Rating,by=list(chocoNoOutliers$Cocoa_Percent), FUN=mean)
+x <- c("Cocoa_Percent", "Avg_Rating")
+colnames(aggregatedTable) <- x
+ggplot(aggregatedTable, aes(x=Cocoa_Percent, y=Avg_Rating)) + geom_bar(stat="identity")
+```  
+  
+This final plot shows the average score based on the cocoa percentage. Luckily, it appears that the trends found in the previous plot hold true here. The average rating is clearly higher in the mid-range of possible cocoa percentages. This means there is a fairly symmetric distribution of average rating based on cocoa percentage. This also explains the slight correlation found above. There is a stronger negative correlation than there is positive correlation, but since both types exist (due to a symmetric distribution) the negative values shows up in a negligible amount.  
+
+To summarize, chocolate with a cocoa percentage in the range 60% - 80% tend to get much higher reviews on average. However, without a balanced dataset representing an equal number of samples from each percentage, these results aren't necessarily conclusive outside this dataset.  
+
+**4. How do different characteristics of the chocolate compare? To elaborate, which characteristics tend to be more favorable and which ones are not? Create both numerical and graphical summaries, and explain.**  
+```{r}
+characteristics <- c(as.character(choco$Characteristics1),
+                     as.character(choco$Characteristics2),
+                     as.character(choco$Characteristics3),
+                     as.character(choco$Characteristics4))
+characteristics <- characteristics[!is.na(characteristics)]
+r <- data.frame(table(characteristics))
+r <- r[r$Freq > 20,]
+uniqueCharacteristics <- unique(r$characteristics)
+uniqueCharacteristics
+```
+  
+The above list shows every unique characteristic found on at least 20 samples in the dataset. From this, we can do some data analysis to determine which one crrelates with a highly-rated chocolate sample.  
+```{r}
+compare <- choco[, c("Characteristics1", "Characteristics2", "Characteristics3", 
+                     "Characteristics4", "Rating")]
+d <- data.frame(Characteristic=character(0), mean=numeric(0), median=numeric(0), stringsAsFactors=FALSE)
+for (element in uniqueCharacteristics) {
+  b <- compare[compare$Characteristics1 == element |
+               compare$Characteristics2 == element | 
+               compare$Characteristics3 == element |
+               compare$Characteristics4 == element, c("Rating")]
+  d[nrow(d) + 1,] = c(element, mean(b, na.rm=TRUE), median(b, na.rm=TRUE))
+}
+d$mean <- as.numeric(as.character(d$mean))
+d$median <- as.numeric(as.character(d$median))
+d[,-1] <- round(d[,-1],2)
+```
+```{r}
+top10means <- tail(d[with(d, order(mean)),], 10)
+kable(top10means)
+```
+  
+This table shows the ten characteristics with the highest ratings, on average. This shows that a chocolate sample with a 'complex' characteristic has the highest rating on average.  
+  
+Below, it can be seen graphically how the top 10 characteristics compare in terms of ratings.  
+```{r}
+ggplot(top10means, aes(x=Characteristic, y=mean)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+```{r}
+#m <- tail(d[with(d, order(median)),], 39)
+#medians <- tail(m[with(m, order(mean)),], 10)
+#kable(medians)
+bottom10means <- head(d[with(d, order(mean)),], 10)
+kable(bottom10means)
+```
+  
+This table shows the ten characteristics with the lowest ratings, on average. THis shows that a chocolate sample with an 'off notes' characteristic has the lowest rating, on average.  
+
+Below, it can be seen graphically how the top 10 characteristics compare in terms of ratings.
+```{r}
+ggplot(bottom10means, aes(x=Characteristic, y=mean)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+  
+Finally, let's look below at a graphical comparison of all of the characteristics that have at least 20 samples in the dataset:
+```{r}
+total <- rbind(bottom10means, top10means)
+ggplot(d, aes(x=Characteristic, y=mean)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+**5. Brainstorm two analyses you would like to perform with your teammate. Describe in plain language what comparisons are you making. Create suitable numerical and graphical summaries for your analyses. Describe the results.**  
+
+For my two analyses, I will look at how the origin of the cocoa bean affects the result of the rating, and I will look at which company has the highest average ratings.
+
+```{r}
+beanRatings <- choco[, c("Bean_Origin", "Rating")]
+aggregatedTable <- aggregate(x=beanRatings$Rating,by=list(beanRatings$Bean_Origin), FUN=mean)
+beanCounts <- data.frame(table(choco[, c("Bean_Origin")]))
+aggregatedTable$Freq <- beanCounts$Freq
+x <- c("Bean_Origin", "Avg_Rating", "Freq")
+colnames(aggregatedTable) <- x
+kable(aggregatedTable[with(aggregatedTable, order(-Avg_Rating)),])
+```
+  
+To determine which countries of origin had the best ratings, the average rating for each bean origin was put into the table above. It can be seen that Tobago has the highest average rating (by far) and Matinique, Principe, Puerto Rico and St. Vincent-Grenadines are all tied for worst average rating. However, Since the top 2 countries only have 2 and 1 entry, respectively, it may be unfair to claim those are the top countries. Looking at the third entry, Solomon Islands, this country has 10 entries. Depending on how one measures the "best", the results can vary slightly.
+```{r}
+ggplot(aggregatedTable, aes(x=Bean_Origin, y=Avg_Rating)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+  
+The above plot shows graphically all the bean origins and hwo they compare with one another.
+
+```{r}
+companyRatings <- choco[, c("Company", "Rating")]
+aggregatedTable <- aggregate(x=companyRatings$Rating,by=list(companyRatings$Company), FUN=mean)
+companyCounts <- data.frame(table(choco$Company))
+aggregatedTable$Freq <- companyCounts$Freq
+x <- c("Company", "Avg_Rating", "Freq")
+colnames(aggregatedTable) <- x
+kable(aggregatedTable[with(aggregatedTable, order(-Avg_Rating)),])
+```
+  
+Looking at the table above, it can be seen which are the top companies and which are the worst, in terms of ratings. However, similar to the previous analysis, it can be seen that the top 5 countries have limited entries in the dataset, so it may be more fair to claim Idilio is the best company on average, given its amount of enties and still high average rating.
+
+```{r}
+top50 <- head(aggregatedTable[with(aggregatedTable, order(-Avg_Rating)),], 50)
+ggplot(top50, aes(x=Company, y=Avg_Rating)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+  
+Finally, the graph above visually compares the top 50 companies.
